@@ -8,7 +8,7 @@ pub enum CmdType {
 }
 
 pub fn show_help_message() {
-    println!("audio-jack v0.1.0 JaccobKii<jaccobkii@gmail.com>");
+    println!("audio-forward v0.1.0 JaccobKii<jaccobkii@gmail.com>");
     println!("Usage: audio-jack <command>");
     println!("\tinit\tInitialize configuration file.");
     println!("\trun\tConnect audio devices.");

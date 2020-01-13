@@ -81,7 +81,7 @@ pub fn init_config(){
 }
 
 pub fn load_config() -> AJFileConfig {
-    let bytes = fs::read(config_file_path()).expect("Failed to read config file. \nPlease run 'audio-jack init'.");
+    let bytes = fs::read(config_file_path()).expect("Failed to read config file. \nPlease run 'audio-forward init'.");
     let content = String::from_utf8(bytes).expect("");
     let res: AJFileConfig = toml::from_str(&content).expect("Invalid config file format.");
     res

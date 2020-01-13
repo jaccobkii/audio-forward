@@ -1,5 +1,5 @@
 [package]
-name = "audio-jack"
+name = "audio-forward"
 version = "0.1.0"
 authors = ["jaccobkii"]
 edition = "2018"
