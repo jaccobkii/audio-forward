@@ -24,18 +24,6 @@ fn config_file_path() -> PathBuf {
     p
 }
 
-fn list_input_devices(manager: &device::AJDeviceManager){
-    manager.get_input_devices().iter().enumerate().for_each(|(idx, d)| {
-        println!("\t[{}] {}", idx, d.name);
-    })
-}
-
-fn list_output_devices(manager: &device::AJDeviceManager){
-    manager.get_output_devices().iter().enumerate().for_each(|(idx, d)| {
-        println!("\t[{}] {}", idx, d.name);
-    })
-}
-
 fn generate_config(volume: f32) -> device::AJConfig {
     device::AJConfig {
         channels: 2,
@@ -77,7 +65,7 @@ pub fn init_config(){
         devices: dev_conf,
         sound: conf
     };
-    fs::write(config_file_path(), toml::to_string_pretty(&result).unwrap());
+    fs::write(config_file_path(), toml::to_string_pretty(&result).unwrap()).expect("Failed to write config file.");
 }
 
 pub fn load_config() -> AJFileConfig {

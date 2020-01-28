@@ -4,8 +4,6 @@ use std::collections::VecDeque;
 use portaudio::PortAudio;
 use portaudio::DeviceIndex;
 use portaudio::DeviceInfo;
-use portaudio::stream::Parameters;
-use portaudio::stream::InputSettings;
 use serde_derive::{Serialize, Deserialize};
 
 pub struct AJDeviceManager {
