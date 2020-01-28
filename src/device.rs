@@ -115,51 +115,54 @@ impl AJDeviceManager {
         pa.is_duplex_format_supported(input_params, output_params, config.sample_rate).expect("Format not supported.");
     
         let settings = portaudio::DuplexStreamSettings::new(input_params, output_params, config.sample_rate, config.frames);
-        let mut stream = pa.open_blocking_stream(settings).expect("Failed to open stream.");
-    
-        let mut buffer: VecDeque<f32> = VecDeque::with_capacity(config.frames as usize * config.channels as usize);
-    
-        fn wait_stream<F>(check_available: F) -> Result<u32, &'static str> 
-            where 
-                F: Fn () -> Result<portaudio::stream::Available, portaudio::Error>,
-            {
-            match check_available().expect("Stream input not available.") {
-                portaudio::StreamAvailable::Frames(frames) => Result::Ok(frames as u32),
-                portaudio::StreamAvailable::InputOverflowed => Result::Err("Input overflowed"),
-                portaudio::StreamAvailable::OutputUnderflowed => Result::Err("Output underflowed")
+
+        // let (sender, receiver) = std::sync::mpsc::channel();
+
+        let mut timer = 0.0;
+        let mut maybe_last_time = None;
+        let config_frames = config.frames;
+
+        let callback = move |args: portaudio::DuplexStreamCallbackArgs<f32, f32>| {
+            let portaudio::DuplexStreamCallbackArgs::<f32, f32> {
+                in_buffer,
+                out_buffer,
+                frames,
+                time,
+                ..
+            } = args;
+            let current_time = time.current;
+            let prev_time = maybe_last_time.unwrap_or(current_time);
+            let dt = current_time - prev_time;
+            timer += dt;
+            maybe_last_time = Some(current_time);
+            if frames != config_frames as usize {
+                panic!("Wrong number of frames");
             }
-        }
-    
+            // sender.send(timer).ok();
+
+            for (output_sample, input_sample) in out_buffer.iter_mut().zip(in_buffer.iter()) {
+                *output_sample = *input_sample;
+            }
+
+            // if count_down > 0.0 {
+            //     portaudio::Continue
+            // } else {
+            //     portaudio::Complete
+            // }
+            portaudio::Continue
+        };
+
+        let mut stream = pa.open_non_blocking_stream(settings, callback).expect("Failed to open stream.");
         stream.start().expect("Failed to start stream.");
-        'stream: loop {
-            let in_frames = wait_stream(|| stream.read_available()).unwrap_or_default();
-            if in_frames > 0 {
-                match stream.read(in_frames) {
-                    Ok(input_samples) =>
-                        buffer.extend(input_samples.into_iter()),
-                    Err(err) => eprintln!("E: Failed to read stream: {}", err)
-                }
-            }
-            let out_frames = wait_stream(|| stream.write_available()).unwrap_or_default();
-            let buffer_frames = (buffer.len() / config.channels as usize) as u32;
-            let write_frames = cmp::min(out_frames, buffer_frames);
-            // println!("IN {}", in_frames);
-            // println!("OUT {}", write_frames);
-            if write_frames > 0 {
-                let n_write_samples = write_frames as usize * config.channels as usize;
-                let res = stream.write(write_frames, |output| {
-                    for i in 0..n_write_samples {
-                        output[i] = config.volume * buffer.pop_front().expect("Buffer is empty.");
-                    }
-                });
-                match res {
-                    Err(e) => {
-                        eprintln!("W: Failed to write streams: {}", e)
-                    },
-                    _ => {}
-                }
-            }
-        }
+        
+        // while let true = stream.is_active().expect("Stream broken") {
+        //     while let Ok(timer) = receiver.try_recv() {
+        //         println!("{:?} s", timer);
+        //     }
+        // }
+        std::thread::park();
+
+        stream.stop().expect("Failed to stop stream.");
     
     }
 }
